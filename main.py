@@ -1,45 +1,60 @@
 import uvicorn
 
-from fastapi import FastAPI
-
-from typing import Optional, List
+from fastapi import FastAPI, status
 
 from pydantic import BaseModel, HttpUrl
 
 app = FastAPI()
 
 
-# 추가: Item 클래스
-class Item(BaseModel):
-    name: str
-    price: float
-    amount: int = 0
-
-
 class User(BaseModel):
     name: str
+    avatar_url: HttpUrl = "https://icotar.com/avatar/fastcampus.png?s=200"
+
+
+class CreateUser(User):
     password: str
-    avatar_url: Optional[HttpUrl] = None
-    inventory: List[Item] = []  # 추가: inventory
 
 
-@app.post("/users")
-def create_user(user: User):
+# @app.post("/users", response_model=User, status_code=201)  # 추가: status_code
+@app.post("/users", response_model=User, status_code=status.HTTP_201_CREATED)  # 추가: status_code
+def create_user(user: CreateUser):
     return user
 
+# -----------------------------------------------
 
-# 추가: get_user()
-@app.get("/users/me")
-def get_user():
-    fake_user = User(
-        name="FastCampus",
-        password="1234",
-        inventory=[
-            Item(name="전설 무기", price=1_000_000),
-            Item(name="전설 방어구", price=900_000),
-        ]
-    )
-    return fake_user
+
+# class User(BaseModel):
+#     name: str = "fastapi"
+#     password: str
+#     avatar_url: HttpUrl = None
+
+
+# @app.post(
+#     "/include",
+#     response_model=User,
+#     response_model_include={"name", "avatar_url"},  # Set 타입. List도 괜찮습니다.
+# )
+# def get_user_with_include(user: User):
+#     return user
+
+
+# @app.post(
+#     "/exclude",
+#     response_model=User,
+#     response_model_exclude={"password"},
+# )
+# def get_user_with_exclude(user: User):
+#     return user
+
+
+# @app.post(
+#     "/unset",
+#     response_model=User,
+#     response_model_exclude_unset=True,
+# )
+# def get_user_with_exclude_unset(user: User):
+#     return user
 
 
 if __name__ == "__main__":
