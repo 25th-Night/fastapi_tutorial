@@ -2,7 +2,7 @@ import uvicorn
 
 from typing import List
 
-from fastapi import FastAPI, Query, Path
+from fastapi import FastAPI, Query, Path, Cookie, Header
 from pydantic import BaseModel, parse_obj_as, Field
 
 app = FastAPI()
@@ -67,6 +67,21 @@ class Item(BaseModel):
 @app.post("/users/{user_id}/item")
 def create_item(item: Item):
     return item
+
+
+# ----------------------------------
+
+
+@app.get("/cookie")
+def get_cookies(ga: str = Cookie(None)):
+    return {"ga": ga}
+    
+
+@app.get("/header")
+def get_headers(x_token: str = Header(None, title="토큰")):
+    return {"X-Token": x_token}
+
+
 
 
 if __name__ == "__main__":
