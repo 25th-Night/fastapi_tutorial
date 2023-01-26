@@ -1,60 +1,72 @@
 import uvicorn
 
-from fastapi import FastAPI, status
+from typing import List
 
-from pydantic import BaseModel, HttpUrl
+from fastapi import FastAPI, Query, Path
+from pydantic import BaseModel, parse_obj_as, Field
 
 app = FastAPI()
 
-
-class User(BaseModel):
-    name: str
-    avatar_url: HttpUrl = "https://icotar.com/avatar/fastcampus.png?s=200"
-
-
-class CreateUser(User):
-    password: str
-
-
-# @app.post("/users", response_model=User, status_code=201)  # 추가: status_code
-@app.post("/users", response_model=User, status_code=status.HTTP_201_CREATED)  # 추가: status_code
-def create_user(user: CreateUser):
-    return user
-
-# -----------------------------------------------
-
-
-# class User(BaseModel):
-#     name: str = "fastapi"
-#     password: str
-#     avatar_url: HttpUrl = None
-
-
-# @app.post(
-#     "/include",
-#     response_model=User,
-#     response_model_include={"name", "avatar_url"},  # Set 타입. List도 괜찮습니다.
+# inventory = (
+#     {
+#         "id": 1,
+#         "user_id": 1,
+#         "name": "레전드포션",
+#         "price": 2500.0,
+#         "amount": 100,
+#     },
+#     {
+#         "id": 2,
+#         "user_id": 1,
+#         "name": "포션",
+#         "price": 300.0,
+#         "amount": 50,
+#     },
 # )
-# def get_user_with_include(user: User):
-#     return user
 
 
-# @app.post(
-#     "/exclude",
-#     response_model=User,
-#     response_model_exclude={"password"},
-# )
-# def get_user_with_exclude(user: User):
-#     return user
+# class Item(BaseModel):
+#     name: str
+#     price: float
+#     amount: int = 0
 
 
-# @app.post(
-#     "/unset",
-#     response_model=User,
-#     response_model_exclude_unset=True,
-# )
-# def get_user_with_exclude_unset(user: User):
-#     return user
+# @app.get("/users/{user_id}/inventory", response_model=List[Item])
+# def get_item(
+#     user_id: int = Path(..., gt=0, title="사용자 id", description="DB의 user.id"),
+#     name: str = Query(None, min_length=1, max_length=2, title="아이템 이름"),
+# ):
+#     user_items = []
+#     for item in inventory:
+#         if item["user_id"] == user_id:
+#             user_items.append(item)
+
+#     response = []
+#     for item in user_items:
+#         if name is None:
+#             response = user_items
+#             break
+#         if item["name"] == name:
+#             response.append(item)
+
+#     return response
+
+
+class Item(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100, title="이름")
+    price: float = Field(None, ge=0)
+    amount: int = Field(
+        default=1,
+        gt=0,
+        le=100,
+        title="수량",
+        description="아이템 갯수. 1~100 개 까지 소지 가능",
+    )
+
+
+@app.post("/users/{user_id}/item")
+def create_item(item: Item):
+    return item
 
 
 if __name__ == "__main__":
