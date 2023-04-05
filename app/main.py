@@ -1,8 +1,11 @@
 from typing import List
 
-from fastapi import Depends, FastAPI, HTTPException, Form
+from fastapi import Depends, FastAPI, HTTPException, Form, File, UploadFile
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
+
+from tempfile import NamedTemporaryFile
+from typing import IO
 
 from . import models, schemas
 from .database import SessionLocal, engine
@@ -47,3 +50,41 @@ def read_users(db: Session = Depends(get_db)):
 @app.post("/login")
 def login(username: str = Form(...), password: str = Form(...)):
     return {"username": username}
+
+
+@app.post("/file/size")
+def get_filesize(file: bytes = File(...)):
+    return {"file_size": len(file)}
+
+
+# @app.post("/file/info")
+# def get_file_info(file: UploadFile = File(...)):
+#     return {
+#         "content_type": file.content_type,
+#         "filename": file.filename
+#     }
+
+
+@app.post("/file/info")
+async def get_file_info(file: UploadFile = File(...)):
+    file_like_obj = file.file
+    contents = await file.read()
+
+    return {
+        "content_type": file.content_type,
+        "filename": file.filename,
+    }
+
+
+async def save_file(file: IO):
+    # s3 업로드라고 생각해 봅시다. delete=True(기본값)이면
+    # 현재 함수가 닫히고 파일도 지워집니다.
+    with NamedTemporaryFile("wb", delete=False) as tempfile:
+        tempfile.write(file.read())
+        return tempfile.name
+
+
+@app.post("/file/store")
+async def store_file(file: UploadFile = File(...)):
+    path = await save_file(file.file)
+    return {"filepath": path}
