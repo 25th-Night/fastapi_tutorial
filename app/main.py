@@ -1,6 +1,6 @@
-from typing import List
+from typing import List, Any, Optional, Dict
 
-from fastapi import Depends, FastAPI, HTTPException, Form, File, UploadFile
+from fastapi import Depends, FastAPI, HTTPException, Form, File, UploadFile, HTTPException, status, Request
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
@@ -9,6 +9,8 @@ from typing import IO
 
 from . import models, schemas
 from .database import SessionLocal, engine
+
+from fastapi.responses import JSONResponse
 
 
 models.Base.metadata.create_all(bind=engine)
@@ -88,3 +90,61 @@ async def save_file(file: IO):
 async def store_file(file: UploadFile = File(...)):
     path = await save_file(file.file)
     return {"filepath": path}
+
+
+users = {
+    1: {"name": "Fast"},
+    2: {"name": "Campus"},
+    3: {"name": "API"},
+}
+
+
+@app.get("/users/{user_id}")
+async def get_user(user_id: int):
+    if user_id not in users.keys():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"<User: {user_id}> is not exists.",
+        )
+    return users[user_id]
+
+
+# 방법 1. 파이썬 내장 Exception 클래스를 상속받아 정의
+# class SomeError(Exception):
+#     def __init__(self, name: str, code: int):
+#         self.name = name
+#         self.code = code
+
+#     def __str__(self):
+#         return f"<{self.name}> is occured. code: <{self.code}>"
+    
+
+# # 추가
+# @app.exception_handler(SomeError)
+# async def some_error_handler(request: Request, exc: SomeError):
+#     return JSONResponse(
+#         content={"message": f"error is {exc.name}"}, status_code=exc.code
+#     )
+
+
+# @app.get("/error")
+# async def get_error():
+#     raise SomeError("Hello", 500)
+
+
+# 방법 2. FastAPI 내장 HTTPException 클래스를 상속받아 정의
+class SomeFastAPIError(HTTPException):
+    def __init__(
+        self,
+        status_code: int,
+        detail: Any = None,
+        headers: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        super().__init__(
+            status_code=status_code, detail=detail, headers=headers
+        )
+
+
+@app.get("/error")
+async def get_error():
+    raise SomeFastAPIError(500, "Hello")
