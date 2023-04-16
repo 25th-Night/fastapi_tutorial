@@ -14,11 +14,15 @@ from fastapi.responses import JSONResponse
 
 from pydantic import BaseModel, Field
 
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+
 
 models.Base.metadata.create_all(bind=engine)
 
 
 app = FastAPI()
+security = HTTPBasic()
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
@@ -29,6 +33,17 @@ def get_db():
     finally:
         db.close()
 
+
+# HTTP 기본 인증(HTTP Basic)
+@app.get("/users/me")
+def read_current_user(credentials: HTTPBasicCredentials = Depends(security)):
+    return {"username": credentials.username, "password": credentials.password}
+
+
+
+
+
+'''이전 코드들
 
 @app.post("/users", response_model=schemas.User)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
@@ -249,3 +264,5 @@ async def verify_token(x_token: str = Header(...)) -> None:
 @app.get("/items", dependencies=[Depends(verify_token)])
 async def get_items():
     return items
+
+'''
