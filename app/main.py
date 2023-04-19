@@ -1,7 +1,7 @@
 import time
 
 from typing import Optional
-from fastapi import BackgroundTasks, FastAPI, status
+from fastapi import BackgroundTasks, Depends, FastAPI, status
 
 app = FastAPI()
 
@@ -13,8 +13,17 @@ def write_log(message: str):
         log.write(message)
 
 
+def get_query(background_tasks: BackgroundTasks, q: Optional[str] = None):
+    if q:
+        message = f"found query: {q}\n"
+        background_tasks.add_task(write_log, message)
+    return q
+
+
 @app.post("/send-notification/{email}", status_code=status.HTTP_202_ACCEPTED)
-async def send_notification(email: str, background_tasks: BackgroundTasks):
+async def send_notification(
+    email: str, background_tasks: BackgroundTasks, q: str = Depends(get_query)
+):
     message = f"message to {email}\n"
     background_tasks.add_task(write_log, message)
 
