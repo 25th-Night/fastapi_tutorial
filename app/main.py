@@ -1,30 +1,23 @@
-import time
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-from typing import Optional
-from fastapi import BackgroundTasks, Depends, FastAPI, status
 
 app = FastAPI()
 
+origins = [
+    "http://localhost",
+    "https://localhost:8000",
+]
 
-def write_log(message: str):
-    time.sleep(2.0)
-
-    with open("log.txt", mode="a") as log:
-        log.write(message)
-
-
-def get_query(background_tasks: BackgroundTasks, q: Optional[str] = None):
-    if q:
-        message = f"found query: {q}\n"
-        background_tasks.add_task(write_log, message)
-    return q
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["OPTIONS", "GET"],
+    allow_headers=["*"],
+)
 
 
-@app.post("/send-notification/{email}", status_code=status.HTTP_202_ACCEPTED)
-async def send_notification(
-    email: str, background_tasks: BackgroundTasks, q: str = Depends(get_query)
-):
-    message = f"message to {email}\n"
-    background_tasks.add_task(write_log, message)
-
-    return {"message": "Message sent"}
+@app.get("/")
+async def hello():
+    return {"message": "Hello World"}
